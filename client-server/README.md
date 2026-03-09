@@ -1,57 +1,53 @@
-# Dokumentacja Projektu: Starter Pack (PUS - Lab 1)
+# Dokumentacja Projektu 1: Starter Pack (Programowanie Usług Sieciowych)
 
-## Rozdział 1: O co w ogóle w tym chodzi? (Wstęp i cel)
-[cite_start]Nasz projekt to tak zwany "starter pack" do programowania aplikacji sieciowych klienta i serwera[cite: 10]. Celem było napisanie dwóch programów (Klienta i Serwera), które potrafią ze sobą "rozmawiać" przez sieć.
+## 1. Wstęp i cel projektu
+Celem niniejszego projektu jest implementacja aplikacji sieciowej działającej w modelu klient-serwer. Rozwiązanie demonstruje niskopoziomową komunikację sieciową przy wykorzystaniu protokołu UDP. 
 
-[cite_start]Od razu wycelowałyśmy w najwyższą ocenę, dlatego nasz projekt spełnia następujące, zaawansowane wymogi przedmiotu Programowanie Usług Sieciowych[cite: 2]:
-* [cite_start]**Poziom 4.0:** Używamy tzw. gniazd surowych (raw sockets)[cite: 13]. [cite_start]Oznacza to, że musieliśmy osobiście zaprogramować komunikację w warstwie 3 i 4, nie polegając na gotowych bibliotekach, które robią to za nas[cite: 18].
-* [cite_start]**Poziom 4.5:** Nasz serwer nasłuchuje na niskim, uprzywilejowanym porcie (dokładnie porcie 80), a my używamy gniazd surowych w systemie Linux całkowicie bez uprawnień konta administratora (root'a)[cite: 14].
-* [cite_start]**Poziom 5.0:** Sterujemy zaporą sieciową (firewallem), aby świadomie przepuszczać lub blokować ruch generowany przez naszą aplikację[cite: 15].
+Projekt został przygotowany w sposób kompleksowy i realizuje następujące wymagania zaliczeniowe przedmiotu:
+* **Wymagania na ocenę 4.0:** Zastosowanie gniazd surowych (ang. *raw sockets*). Oznacza to samodzielną implementację i obsługę komunikacji w warstwie sieciowej (3) oraz transportowej (4), bez pośrednictwa wysokopoziomowych bibliotek.
+* **Wymagania na ocenę 4.5:** Nasłuchiwanie serwera na uprzywilejowanym porcie (port 80) przy jednoczesnym wykorzystaniu gniazd surowych w systemie Linux bez uprawnień administratora (konta `root`).
+* **Wymagania na ocenę 5.0:** Odpowiednia konfiguracja systemowej zapory sieciowej (firewalla) do kontrolowania ruchu generowanego przez aplikację.
 
+## 2. Środowisko uruchomieniowe i zarządzanie uprawnieniami
+Z uwagi na specyfikę wymagań dotyczących zarządzania uprawnieniami w systemie Linux oraz konfiguracji zapory sieciowej `iptables`, projekt został przygotowany z myślą o środowisku opartym na systemie Ubuntu (np. poprzez WSL - Windows Subsystem for Linux).
 
+**Ominięcie wymogu uprawnień administratora (root):**
+Standardowo operacje takie jak otwarcie gniazda surowego lub rezerwacja portu poniżej 1024 wymagają uprawnień superużytkownika (komenda `sudo`). Aby spełnić wymóg realizacji tych zadań z poziomu zwykłego użytkownika, zastosowano mechanizm *Linux Capabilities*. 
+W ramach konfiguracji środowiska skopiowano plik wykonywalny interpretera języka Python (tworząc plik `./moj_python`), a następnie nadano mu odpowiednie, punktowe uprawnienia za pomocą narzędzia `setcap`. Pozwala to na poprawne funkcjonowanie aplikacji przy jednoczesnym zachowaniu bezpieczeństwa reszty systemu operacyjnego.
 
-## Rozdział 2: Środowisko, czyli dlaczego uciekliśmy z Windowsa do Linuksa?
-[cite_start]Zasady projektu wymagały zabawy uprawnieniami w systemie Linux oraz konfiguracji linuksowego firewalla[cite: 14, 15]. Zwykły Windows tego nie potrafi, dlatego użyliśmy **WSL (Windows Subsystem for Linux)**, czyli wirtualnego Ubuntu ukrytego w komputerze.
+## 3. Architektura Klienta (`client_raw.py`)
+Z uwagi na wykorzystanie gniazd surowych na ocenę 4.0, aplikacja kliencka jest odpowiedzialna za samodzielne formowanie pełnych pakietów sieciowych. 
 
-### Tajemnica pliku `moj_python`:
-> Zwykle, aby otworzyć gniazdo surowe lub zająć port poniżej 1024, system wymaga komendy `sudo` (czyli bycia rootem). [cite_start]Projekt jednak tego zabrania[cite: 14]. Dlatego skopiowaliśmy główny program Pythona do naszego folderu (tworząc plik `./moj_python`) i nadaliśmy mu punktowe, chirurgiczne uprawnienia zwane **Linux Capabilities** (`setcap`). Dzięki temu nasz skrypt ma supermoce sieciowe, ale reszta systemu jest bezpieczna.
+W kodzie klienta proces ten przebiega wieloetapowo:
+1. **Budowa nagłówka IP (IPv4):** Ręczne zdefiniowanie parametrów takich jak wersja protokołu, długość pakietu oraz adresy źródłowy i docelowy (w przypadku testów lokalnych: `127.0.0.1`). Implementacja zawiera również algorytm wyliczający wymaganą sumę kontrolną (ang. *checksum*).
+2. **Budowa nagłówka UDP:** Dołączenie informacji o porcie źródłowym oraz docelowym (port 80).
+3. **Konstrukcja Payloadu:** Dołączenie właściwej wiadomości tekstowej na koniec pakietu.
 
-## Rozdział 3: Anatomia Klienta (Jak ulepić własny pakiet)
-Zwykłe programy sieciowe wysyłają tylko tekst, a system operacyjny sam pakuje go w "kopertę" (dodaje adresy IP, porty itp.). [cite_start]Ponieważ my używamy gniazd surowych na ocenę 4.0[cite: 13], system powiedział nam: "radźcie sobie same".
+Do serializacji struktury pakietu (konwersji typów liczbowych i tekstowych na ciąg bajtów zrozumiały dla interfejsów sieciowych) wykorzystano standardowy moduł `struct` języka Python, posługując się odpowiednimi łańcuchami formatującymi (np. `!BBHHHBBH4s4s`).
 
-Nasz klient (`client_raw.py`) musi ręcznie zbudować cały pakiet danych:
-* **Nagłówek IP:** Ręcznie wpisujemy wersję protokołu (IPv4), długość, skąd i dokąd leci pakiet (nasze `127.0.0.1`), a następnie wyliczamy skomplikowaną sumę kontrolną (checksum).
-* **Nagłówek UDP:** Doklejamy informację o porcie źródłowym i porcie docelowym (port 80).
-* **Payload (Wiadomość):** Na samym końcu doklejamy nasz tekst: *"Siema serwer..."*.
+## 4. Architektura Serwera (`server_raw.py`)
+Serwer został skonfigurowany do nasłuchiwania na uprzywilejowanym porcie 80, co realizuje założenia projektu na ocenę 4.5.
 
+Aplikacja wykorzystuje gniazdo surowe. W związku z tym funkcja odbierająca (np. `recvfrom`) pobiera całą strukturę datagramu docierającego do interfejsu sieciowego – łącznie z nagłówkami dodanymi przez klienta. Aby wyodrębnić użyteczne dane (wiadomość tekstową), kod serwera implementuje następujący mechanizm parsowania:
+1. Odrzucenie pierwszych 20 bajtów reprezentujących nagłówek IP.
+2. Odrzucenie kolejnych 8 bajtów reprezentujących nagłówek UDP.
+3. Odczyt i dekodowanie pozostałej części bufora jako docelowej wiadomości tekstowej.
 
+## 5. Konfiguracja zapory sieciowej (Firewall)
+W celu zrealizowania wymagań na ocenę 5.0, projekt obejmuje demonstrację manipulacji ruchem sieciowym za pomocą narzędzia `iptables`.
 
-Do łączenia tych danych użyliśmy w Pythonie modułu `struct`. Pozwala on spakować zwykłe liczby i tekst w ciąg zer i jedynek (tzw. bajtów), używając formatów takich jak `!BBHHHBBH4s4s` (gdzie np. `B` to 1 bajt, a `H` to 2 bajty).
-
-## Rozdział 4: Anatomia Serwera (Jak nasłuchiwać)
-[cite_start]Nasz serwer (`server_raw.py`) jest ustawiony na nasłuchiwanie na porcie 80, co zalicza nam część wymogu na ocenę 4.5[cite: 14].
-
-Gdy serwer odbiera wiadomość przez gniazdo surowe, dostaje absolutnie wszystko – całą "kopertę" od klienta. Żeby przeczytać samą wiadomość, serwer musi w kodzie "odciąć" początek tego pakietu:
-1. Odrzuca pierwsze **20 bajtów** (bo tam jest nagłówek IP).
-2. Odrzuca kolejne **8 bajtów** (bo tam jest nagłówek UDP).
-3. Dopiero to, co zostaje od 28 bajtu do końca, to nasza właściwa wiadomość tekstowa, którą serwer wypisuje na ekranie.
-
-## Rozdział 5: Ściana ognia, czyli sterowanie zaporą (Zadanie na 5.0)
-[cite_start]Aby udowodnić, że kontrolujemy ruch sieciowy, użyliśmy systemowego narzędzia `iptables`[cite: 15].
-Ponieważ komunikujemy się po protokole UDP na porcie 80, używamy komendy, która mówi systemowi: *"każdy wchodzący (`INPUT`) pakiet na port 80 (`--dport 80`) masz bezlitośnie zniszczyć (`DROP`)"*. Gdy blokada jest aktywna, serwer przestaje widzieć wiadomości od klienta.
-
-
+Scenariusz testowy zakłada utworzenie reguły w łańcuchu `INPUT`, która przechwytuje i bezwarunkowo odrzuca (`DROP`) pakiety protokołu UDP kierowane na port docelowy 80. Skutkuje to zablokowaniem widoczności komunikatów klienckich na serwerze, potwierdzając tym samym pełną kontrolę nad środowiskiem sieciowym.
 
 ---
 
-## Rozdział 6: Ściągawka na zaliczenie (Krok po kroku)
-[cite_start]Formą zaliczenia projektu jest prezentacja działającego kodu na żywo[cite: 19]. Poniżej masz gotowy scenariusz tego, co wpisywać w terminalach Ubuntu.
+## 6. Instrukcja uruchomienia i scenariusze testowe
+Zaliczenie projektu przewiduje demonstrację działania aplikacji na żywo. Poniżej przedstawiono formalny scenariusz weryfikacji.
 
-### Przygotowanie
-Zrób to przed zajęciami lub na samym początku, w głównym terminalu:
+### Przygotowanie środowiska
+Przed uruchomieniem głównych skryptów, należy przygotować lokalny interpreter i nadać mu wymagane uprawnienia *capabilities* (wykonywane jednorazowo): Na każdym terminalu u mnie wsl -d Ubuntu, po prostu ważne aby połączyć się w wsl.
 ```bash
 # Wejście do folderu z projektem
-cd ~/lab1
+cd ~/lab1/client-server
 
 # Skopiowanie interpretera Pythona
 cp /usr/bin/python3 ./moj_python
@@ -60,11 +56,11 @@ cp /usr/bin/python3 ./moj_python
 sudo setcap 'cap_net_raw,cap_net_bind_service+ep' ./moj_python
 
 # Krok 1: Odpalenie Serwera (Otwórz Terminal 1) - (Serwer "zawiśnie" i będzie czekał na pakiety)
-cd ~/lab1
+cd ~/lab1/client-server
 ./moj_python server_raw.py
 
 # Krok 2: Odpalenie Klienta (Otwórz Terminal 2) - (W Terminalu 1 powinieneś zobaczyć odebraną wiadomość.)
-cd ~/lab1
+cd ~/lab1/client-server
 ./moj_python client_raw.py
 
 # Krok 3: Demonstracja Firewalla na 5.0 (Otwórz Terminal 3) Wpisz komendę blokującą pakiety (wymaga hasła):
@@ -77,3 +73,7 @@ sudo iptables -D INPUT -p udp --dport 80 -j DROP
 '''
 
 Odpal klienta w Terminalu 2 po raz ostatni. Serwer znowu radośnie odbierze pakiet!
+
+W przypadku przykładu z ipv6 wystarczy, że połączysz się z wsl, w jednym terminalu (serwerowym) puścisz server_ipv6.py, a w drugim (klientowym) client_ipv6.py i gitara:) TPC i IPv6.
+
+

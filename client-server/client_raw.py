@@ -42,7 +42,7 @@ def main():
 
     # Pakujemy nagłówek bez sumy kontrolnej
     ip_header = struct.pack('!BBHHHBBH4s4s', ip_ihl_ver, ip_tos, ip_tot_len, ip_id, ip_frag_off, ip_ttl, ip_proto, ip_check, ip_saddr, ip_daddr)
-    
+
     # Liczymy sumę i pakujemy jeszcze raz
     ip_check = checksum(ip_header)
     ip_header = struct.pack('!BBHHHBBH4s4s', ip_ihl_ver, ip_tos, ip_tot_len, ip_id, ip_frag_off, ip_ttl, ip_proto, ip_check, ip_saddr, ip_daddr)
@@ -64,3 +64,37 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+        
+''' 
+Troszenke dokumentacji
+
+Zapis !BBHHHBBH4s4s to tzw. łańcuch formatujący (format string) używany przez moduł struct w języku Python.
+Służy on dokładnie do zbudowania nagłówka IPv4. Ponieważ korzystasz z gniazd surowych, 
+musisz przetłumaczyć zwykłe liczby (np. długość pakietu, wersję IP) na ciąg surowych bitów i bajtów, 
+które zrozumie karta sieciowa. Do tego właśnie służy ten dziwny ciąg znaków – mówi on Pythonowi, 
+ile miejsca w pamięci ma zająć każda kolejna wartość.
+
+Oto co oznacza każdy pojedynczy znak w tym kodzie:
+! (Wykrzyknik) – Oznacza tzw. Network byte order (big-endian). 
+Informuje Pythona: "Zapisz te bajty w kolejności standardowej dla protokołów sieciowych, 
+a nie w kolejności domyślnej dla procesora mojego komputera".
+
+B – Oznacza 1 bajt (małą liczbę całkowitą).
+H – Oznacza 2 bajty (nieco większą liczbę całkowitą).
+4s – Oznacza ciąg dokładnie 4 bajtów (ang. string o długości 4).
+
+Jak to się mapuje na konkretne pola nagłówka IP w Twoim kodzie struct.pack(...)?
+
+B (1 bajt): Wersja IP i długość nagłówka (ip_ihl_ver).
+B (1 bajt): Typ usługi (ip_tos).
+H (2 bajty): Całkowita długość pakietu (ip_tot_len).
+H (2 bajty): Identyfikator pakietu (ip_id).
+H (2 bajty): Flagi i przesunięcie fragmentacji (ip_frag_off).
+B (1 bajt): Time to Live, czyli "czas życia" pakietu (ip_ttl).
+B (1 bajt): Numer protokołu warstwy wyższej, u Ciebie UDP (ip_proto).
+H (2 bajty): Suma kontrolna nagłówka (ip_check).
+4s (4 bajty): Źródłowy adres IP (ip_saddr). Zwykły adres IPv4 składa się dokładnie z 4 liczb oddzielonych kropkami (np. 127.0.0.1), więc zajmuje w pamięci 4 bajty.
+4s (4 bajty): Docelowy adres IP (ip_daddr).
+'''
