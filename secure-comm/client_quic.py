@@ -21,7 +21,7 @@ async def main():
     # Definiujemy ten sam protokół ALPN co w serwerze
     konfiguracja = QuicConfiguration(
         is_client=True,
-        alpn_protocols=["projekt-quic-5.0"]
+        alpn_protocols=["projekt-quic"]
     )
     
     # Wskazujemy nasze własne CA (spełnia wymóg na 3.5)
