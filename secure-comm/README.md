@@ -33,6 +33,9 @@ Aby zrealizować obustronne uwierzytelnianie bez ostrzeżeń o niezaufanych wyst
 
 Podczas łączenia się, obie strony wysyłają sobie pliki `.crt` i weryfikują je względem wczytanego wzoru zaufanego urzędu (`ca.crt`).
 
+<img width="1867" height="522" alt="image" src="https://github.com/user-attachments/assets/7709e31a-bccd-4e8d-83e3-535095bde572" />
+
+
 ---
 
 ## Kluczowe elem. kodu.
