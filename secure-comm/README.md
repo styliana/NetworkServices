@@ -60,24 +60,24 @@ Do poprawnego uruchomienia projektu wymagany jest język Python oraz biblioteka 
 ```bash
 pip install aioquic
 
-Part1 TCP
+Part1 TCP (python3 = moze byc python tez)
 Otwórz pierwszy terminal i uruchom serwer TCP:
 python server_tcp.py
 (Oczekiwany wynik: "Serwer TCP/TLS nasłuchuje na 127.0.0.1:8443...")
 
 Otwórz drugi terminal i uruchom klienta TCP:
-python client_tcp.py
+python3 client_tcp.py
 (Oczekiwany wynik: Logi potwierdzające przesłanie wiadomości w obu terminalach. Oznacza to udaną negocjację mTLS na protokole TCP).
 
 Part2 QUIC
 Zatrzymaj poprzednie skrypty (Ctrl+C). QUIC działa na warstwie UDP i natywnie wspiera TLS 1.3 .
 W pierwszym terminalu uruchom serwer QUIC:
 
-python server_quic.py
+python3 server_quic.py
 (Oczekiwany wynik: "Serwer QUIC nasłuchuje na 127.0.0.1:4433 (działa na UDP)...")
 
 W drugim terminalu uruchom klienta QUIC:
-python client_quic.py
+python3 client_quic.py
 (Oczekiwany wynik: Błyskawiczne zestawienie połączenia, wymiana certyfikatów i przesył logów testowych).
 
 ```
