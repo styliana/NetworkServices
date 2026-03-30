@@ -5,6 +5,16 @@ Implementacja demonstruje zestawienie bezpiecznych, szyfrowanych kanałów komun
 
 Kluczowym elementem projektu jest autorska infrastruktura PKI (Public Key Infrastructure) oraz wdrożenie **obustronnego uwierzytelniania (mTLS)**, gdzie zarówno serwer, jak i klient muszą wylegitymować się ważnym certyfikatem podpisanym przez zaufane Centrum Certyfikacji (CA).
 
+*Komunikacja QUIC.*
+
+<img width="1457" height="300" alt="image" src="https://github.com/user-attachments/assets/226684e5-d01b-4aea-aade-a517ff811fe4" />
+
+*Komunikacja TCP z mTLS.*
+
+<img width="1467" height="380" alt="image" src="https://github.com/user-attachments/assets/26cac638-34f6-4020-b5a7-ee8503060a91" />
+
+
+
 ---
 
 ## 🎯 Zrealizowane Wymagania (Kaskadowo)
